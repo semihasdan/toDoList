@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -56,6 +55,7 @@ export default function App() {
       console.error('Failed to save tasks to AsyncStorage:', e);
     }
   };
+
   // Daha önceden kaydedilen görevleri tekrar yükleme fonksiyonunu çağırma
   useEffect(() => {
     loadTasks();
@@ -67,13 +67,13 @@ export default function App() {
   }, [tasks]);
 
   // Yeni görev ekleme işlemi
-const addTask = () => {
-  const newTask = {
-    id: Date.now().toString(),
-    title: taskTitle,
-    description: taskDescription,
-    completed: false,
-    createdAt: new Date(),
+  const addTask = () => {
+    const newTask = {
+      id: Date.now().toString(),
+      title: taskTitle,
+      description: taskDescription,
+      completed: false,
+      createdAt: new Date(),
   };
 
   // Add the new task at the beginning of the tasks array
@@ -82,8 +82,7 @@ const addTask = () => {
   setIsModalVisible(false);
   setTaskTitle('');
   setTaskDescription('');
-};
-
+  };
 
   // Görev silme işlemi
   const deleteTask = (taskId) => {
@@ -134,33 +133,33 @@ const addTask = () => {
   };
 
   // Görev öğesi render işlemi
-const renderTask = ({ item }) => {
-  const descriptionToShow = item.description.length > 150 ? item.description.substring(0, 150) + '...' : item.description;
+  const renderTask = ({ item }) => {
+    const descriptionToShow = item.description.length > 150 ? item.description.substring(0, 150) + '...' : item.description;
 
-  return (
-    <TouchableOpacity onPress={() => showTaskDetails(item)}>
-      <View style={[styles.taskItem, item.completed && styles.completedTask]}>
-        <View style={styles.taskInfo}>
-          <Text style={styles.taskTitle}>{item.title}</Text>
-          <Text style={styles.taskDescription}>{descriptionToShow}</Text>
-          <Text style={styles.taskCreatedAt}>{getCreatedAtText(item.createdAt)}</Text>
+    return (
+      <TouchableOpacity onPress={() => showTaskDetails(item)}>
+        <View style={[styles.taskItem, item.completed && styles.completedTask]}>
+          <View style={styles.taskInfo}>
+            <Text style={styles.taskTitle}>{item.title}</Text>
+            <Text style={styles.taskDescription}>{descriptionToShow}</Text>
+            <Text style={styles.taskCreatedAt}>{getCreatedAtText(item.createdAt)}</Text>
+          </View>
+          <View>
+          <TouchableOpacity style={styles.taskButton} onPress={() => toggleComplete(item.id)}>
+              {item.completed ? (
+                <MaterialIcons name="undo" size={20} color="orange" />
+              ) : (
+                <AntDesign name="checkcircle" size={20} color="green" />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.taskButton} onPress={() => deleteTask(item.id)}>
+              <FontAwesome name="trash" size={20} color="red" />
+            </TouchableOpacity>          
+          </View>
         </View>
-        <View>
-        <TouchableOpacity style={styles.taskButton} onPress={() => toggleComplete(item.id)}>
-            {item.completed ? (
-              <MaterialIcons name="undo" size={20} color="orange" />
-            ) : (
-              <AntDesign name="checkcircle" size={20} color="green" />
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.taskButton} onPress={() => deleteTask(item.id)}>
-            <FontAwesome name="trash" size={20} color="red" />
-          </TouchableOpacity>          
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-};
+      </TouchableOpacity>
+    );
+  };
 
   // Ana komponentin render işlemi            
   return (
