@@ -8,12 +8,13 @@ import {
   FlatList,
   TextInput,
   Button,
-  ImageBackground,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AntDesign, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import moment from 'moment';
+import { useFocusEffect } from '@react-navigation/native';
+
 // Motive edici alıntılar listesi
 const motivationalQuotes = [
   "The only way to do great work is to love what you do. - Steve Jobs",
@@ -26,7 +27,7 @@ const motivationalQuotes = [
   "Success doesn’t just find you. You have to go out and get it.",
 ];
 
-export default function App() {
+export default function Main() {
   const [tasks, setTasks] = useState([]); // Görevlerin tutulduğu state
   const [isModalVisible, setIsModalVisible] = useState(false); // Görev ekleme modalı görünürlüğü
   const [isViewVisible, setIsViewVisible] = useState(false); // Görev detay modalı görünürlüğü
@@ -56,10 +57,13 @@ export default function App() {
       console.error('Failed to save tasks to AsyncStorage:', e);
     }
   };
-  // Daha önceden kaydedilen görevleri tekrar yükleme fonksiyonunu çağırma
-  useEffect(() => {
-    loadTasks();
-  }, []);
+
+  // Ekran odaklandığında görevleri yükle
+  useFocusEffect(
+    React.useCallback(() => {
+      loadTasks();
+    }, [])
+  );
 
   // Görevler değiştiğinde depoya kaydet
   useEffect(() => {
@@ -67,23 +71,19 @@ export default function App() {
   }, [tasks]);
 
   // Yeni görev ekleme işlemi
-const addTask = () => {
-  const newTask = {
-    id: Date.now().toString(),
-    title: taskTitle,
-    description: taskDescription,
-    completed: false,
-    createdAt: new Date(),
+  const addTask = () => {
+    const newTask = {
+      id: Date.now().toString(),
+      title: taskTitle,
+      description: taskDescription,
+      completed: false,
+      createdAt: new Date(),
+    };
+    setTasks([...tasks, newTask]);
+    setIsModalVisible(false);
+    setTaskTitle('');
+    setTaskDescription('');
   };
-
-  // Add the new task at the beginning of the tasks array
-  setTasks([newTask, ...tasks]);
-
-  setIsModalVisible(false);
-  setTaskTitle('');
-  setTaskDescription('');
-};
-
 
   // Görev silme işlemi
   const deleteTask = (taskId) => {
@@ -134,109 +134,89 @@ const addTask = () => {
   };
 
   // Görev öğesi render işlemi
-const renderTask = ({ item }) => {
-  const descriptionToShow = item.description.length > 150 ? item.description.substring(0, 150) + '...' : item.description;
-
-  return (
+  const renderTask = ({ item }) => (
     <TouchableOpacity onPress={() => showTaskDetails(item)}>
       <View style={[styles.taskItem, item.completed && styles.completedTask]}>
         <View style={styles.taskInfo}>
           <Text style={styles.taskTitle}>{item.title}</Text>
-          <Text style={styles.taskDescription}>{descriptionToShow}</Text>
+          <Text style={styles.taskDescription}>{item.description}</Text>
           <Text style={styles.taskCreatedAt}>{getCreatedAtText(item.createdAt)}</Text>
         </View>
-        <View>
-        <TouchableOpacity style={styles.taskButton} onPress={() => toggleComplete(item.id)}>
+        <View style={styles.taskButtons}>
+          <TouchableOpacity style={styles.taskButton} onPress={() => deleteTask(item.id)}>
+            <FontAwesome name="trash" size={20} color="red" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.taskButton} onPress={() => toggleComplete(item.id)}>
             {item.completed ? (
               <MaterialIcons name="undo" size={20} color="orange" />
             ) : (
               <AntDesign name="checkcircle" size={20} color="green" />
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.taskButton} onPress={() => deleteTask(item.id)}>
-            <FontAwesome name="trash" size={20} color="red" />
-          </TouchableOpacity>          
         </View>
       </View>
     </TouchableOpacity>
   );
-};
 
   // Ana komponentin render işlemi            
   return (
-    <ImageBackground source={require('./background.jpeg')} style={styles.backgroundImage}>
-      <View style={styles.container}>
-        <Text style={styles.heading}>To Do</Text>
-        <FlatList
-          data={tasks}
-          renderItem={renderTask}
-          keyExtractor={(item) => item.id}
-          style={{ width: '100%' }}
-        />
-        <TouchableOpacity style={styles.addButton} onPress={() => setIsModalVisible(true)}>
-          <AntDesign name="plus" size={24} color="white" />
-        </TouchableOpacity>
-        <Modal
-          isVisible={isModalVisible}
-          onBackdropPress={() => setIsModalVisible(false)}
-          backdropOpacity={0.5}
-        >
-          <View style={styles.modalContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Task Title"
-              value={taskTitle}
-              onChangeText={setTaskTitle}
-              maxLength={50} 
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Task Description"
-              value={taskDescription}
-              onChangeText={setTaskDescription}
-              maxLength={300} 
-            />
-            <Button title="Add Task" onPress={addTask} />
-          </View>
-        </Modal>
-        <Modal
-          isVisible={isViewVisible}
-          onBackdropPress={() => setIsViewVisible(false)}
-          backdropOpacity={0.5}
-        >
-          <View style={styles.modalContainer}>
-            {selectedTask && (
-              <>
-                <Text style={styles.modalTitle}>{selectedTask.title}</Text>
-                <Text style={styles.modalDescription}>{selectedTask.description}</Text>
-                <Text style={styles.modalQuote}>NOTE: {motivationalQuote}</Text>
-              </>
-            )}
-          </View>
-        </Modal>
-      </View>
-    </ImageBackground>
+    <View style={styles.container}>
+      <FlatList
+        data={tasks}
+        renderItem={renderTask}
+        keyExtractor={(item) => item.id}
+        style={{ width: '100%' }}
+      />
+      <TouchableOpacity style={styles.addButton} onPress={() => setIsModalVisible(true)}>
+        <AntDesign name="plus" size={24} color="white" />
+      </TouchableOpacity>
+      <Modal
+        isVisible={isModalVisible}
+        onBackdropPress={() => setIsModalVisible(false)}
+        backdropOpacity={0.5}
+      >
+        <View style={styles.modalContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Task Title"
+            value={taskTitle}
+            onChangeText={setTaskTitle}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Task Description"
+            value={taskDescription}
+            onChangeText={setTaskDescription}
+          />
+          <Button title="Add Task" onPress={addTask} />
+        </View>
+      </Modal>
+      <Modal
+        isVisible={isViewVisible}
+        onBackdropPress={() => setIsViewVisible(false)}
+        backdropOpacity={0.5}
+      >
+        <View style={styles.modalContainer}>
+          {selectedTask && (
+            <>
+              <Text style={styles.modalTitle}>{selectedTask.title}</Text>
+              <Text style={styles.modalDescription}>{selectedTask.description}</Text>
+              <Text style={styles.modalQuote}>NOTE: {motivationalQuote}</Text>
+            </>
+          )}
+          <Button title="Close" onPress={() => setIsViewVisible(false)} />
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    resizeMode: 'cover',
-    justifyContent: 'center',
-  },
   container: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: '#fff',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 60,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 20,
+    justifyContent: 'center',
   },
   addButton: {
     position: 'absolute',
@@ -245,21 +225,21 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(0, 0, 255, 0.7)',
+    backgroundColor: 'blue',
     alignItems: 'center',
     justifyContent: 'center',
   },
   taskItem: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+    borderBottomColor: '#ccc',
     width: '100%',
+    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
   completedTask: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: '#eee',
   },
   taskInfo: {
     flex: 1,
@@ -267,33 +247,28 @@ const styles = StyleSheet.create({
   taskTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
     marginBottom: 5,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)', 
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
   },
   taskDescription: {
     fontSize: 16,
-    color: 'white',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)', 
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    marginBottom: 5,
   },
   taskCreatedAt: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#666',
+  },
+  taskButtons: {
+    flexDirection: 'row',
   },
   taskButton: {
     marginLeft: 10,
     padding: 5,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    marginTop: 10
+    borderColor: 'black',
   },
   modalContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
   },
@@ -301,25 +276,22 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: 'black',
   },
   modalDescription: {
     fontSize: 16,
     marginBottom: 10,
-    color: 'black',
   },
   input: {
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.5)',
+    borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
-    backgroundColor: 'white',
   },
   modalQuote: {
     top: 10,
     fontSize: 14,
     fontStyle: 'italic',
-    color: 'rgba(0, 0, 0, 0.7)',
+    color: '#888',
   },
 });
